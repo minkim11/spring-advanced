@@ -61,7 +61,7 @@ public class JwtFilter implements Filter {
             httpRequest.setAttribute("email", claims.get("email"));
             httpRequest.setAttribute("userRole", claims.get("userRole"));
 
-            if (url.startsWith("/admin") && !UserRole.ADMIN.equals(userRole)) {
+            if (url.startsWith("/admin/users") && !UserRole.ADMIN.equals(userRole)) {
                 log.warn("권한 부족: userId={}, role={}, URI={}", claims.getSubject(), userRole, url);
                 sendErrorResponse(httpResponse, HttpStatus.FORBIDDEN, "접근 권한이 없습니다.");
                 return;
