@@ -71,6 +71,54 @@ class ManagerServiceTest {
         assertEquals("일정을 생성한 유저만 담당자를 지정할 수 있습니다.", exception.getMessage());
     }
 
+    @Test
+    void 일정을_생성한_유저가_아닐_경우_예외가_발생한다() {
+        // given
+        AuthUser authUser = new AuthUser(1L, "a@a.com", UserRole.USER); // 로그인한 유저
+        long todoId = 1L;
+        long managerUserId = 2L;
+        User todoUser = new User("a@a.com", "password", UserRole.USER); // 일정 만든 유저
+        ReflectionTestUtils.setField(todoUser, "id", 3L);
+
+        Todo todo = new Todo();
+        ReflectionTestUtils.setField(todo, "user", todoUser);
+
+        ManagerSaveRequest managerSaveRequest = new ManagerSaveRequest(managerUserId);
+
+        given(todoRepository.findById(todoId)).willReturn(Optional.of(todo));
+
+        // when & then
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () ->
+                managerService.saveManager(authUser, todoId, managerSaveRequest)
+        );
+
+        assertEquals("일정을 생성한 유저만 담당자를 지정할 수 있습니다.", exception.getMessage());
+    }
+
+    @Test
+    void 본인을_담당자로_등록할_경우_예외가_발생한다() {
+        // given
+        AuthUser authUser = new AuthUser(1L, "a@a.com", UserRole.USER);
+        User user = User.fromAuthUser(authUser); // 일정 만든 유저
+
+        long todoId = 1L;
+        Todo todo = new Todo();
+        ReflectionTestUtils.setField(todo, "user", user);
+
+        long managerUserId = 1L; // 담당자에 본인 id 입력
+        ManagerSaveRequest managerSaveRequest = new ManagerSaveRequest(managerUserId);
+
+        given(todoRepository.findById(todoId)).willReturn(Optional.of(todo));
+        given(userRepository.findById(managerUserId)).willReturn(Optional.of(user));
+
+        // when & then
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () ->
+                managerService.saveManager(authUser, todoId, managerSaveRequest)
+        );
+
+        assertEquals("일정 작성자는 본인을 담당자로 등록할 수 없습니다.", exception.getMessage());
+    }
+
     @Test // 테스트코드 샘플
     public void manager_목록_조회에_성공한다() {
         // given
@@ -122,6 +170,4 @@ class ManagerServiceTest {
         assertEquals(managerUser.getEmail(), response.getUser().getEmail());
     }
 
-    @Test
-    void
 }
